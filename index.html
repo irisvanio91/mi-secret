@@ -1,0 +1,490 @@
+``html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canal Tático PTT</title>
+
+    <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+
+    <style>
+        :root {
+            --background: #080b08;
+            --panel: #11170f;
+            --panel-light: #182016;
+            --military-green: #8fa96b;
+            --terminal-green: #9cff57;
+            --border: #3e5033;
+            --danger: #ff3b30;
+            --muted: #78836f;
+        }
+
+         {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 22px;
+            color: var(--military-green);
+            font-family: "Courier New", monospace;
+            text-align: center;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.018) 0,
+                    rgba(255, 255, 255, 0.018) 1px,
+                    transparent 1px,
+                    transparent 4px
+                ),
+                radial-gradient(circle at top, #1a2416 0, #080b08 58%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+            overflow: hidden;
+            background: rgba(12, 17, 11, 0.96);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-shadow:
+                0 0 0 4px #090c08,
+                0 18px 45px rgba(0, 0, 0, 0.75),
+                inset 0 0 25px rgba(110, 150, 70, 0.05);
+        }
+
+        .top-secret {
+            padding: 9px;
+            color: #0a0c08;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            background: var(--military-green);
+        }
+
+        .content {
+            padding: 24px 20px;
+        }
+
+        h2 {
+            margin: 0;
+            color: var(--terminal-green);
+            font-size: 22px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 12px rgba(156, 255, 87, 0.4);
+        }
+
+        .subtitle {
+            margin: 7px 0 22px;
+            color: var(--muted);
+            font-size: 11px;
+            letter-spacing: 3px;
+        }
+
+        .box {
+            position: relative;
+            margin: 14px 0;
+            padding: 15px;
+            background:
+                linear-gradient(135deg, rgba(255,255,255,0.025), transparent),
+                var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.55);
+        }
+
+        .box::before,
+        .box::after {
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            content: "";
+        }
+
+        .box::before {
+            top: 4px;
+            left: 4px;
+            border-top: 1px solid var(--terminal-green);
+            border-left: 1px solid var(--terminal-green);
+        }
+
+        .box::after {
+            right: 4px;
+            bottom: 4px;
+            border-right: 1px solid var(--terminal-green);
+            border-bottom: 1px solid var(--terminal-green);
+        }
+
+        .label {
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .id-display {
+            margin: 8px 0 2px;
+            color: var(--terminal-green);
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(156, 255, 87, 0.35);
+        }
+
+        input {
+            width: 92%;
+            margin: 10px 0 12px;
+            padding: 13px;
+            color: var(--terminal-green);
+            font-family: "Courier New", monospace;
+            font-size: 15px;
+            text-align: center;
+            background: #070a07;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 10px rgba(156, 255, 87, 0.18);
+        }
+
+        input::placeholder {
+            color: #56604f;
+        }
+
+        #connect-btn {
+            width: 92%;
+            padding: 12px;
+            color: #0b0e09;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            background: var(--military-green);
+            border: 1px solid #b7ca97;
+            border-radius: 2px;
+            transition: 0.15s;
+        }
+
+        #connect-btn:hover {
+            color: #020302;
+            background: var(--terminal-green);
+            box-shadow: 0 0 16px rgba(156, 255, 87, 0.35);
+        }
+
+        .status-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+        }
+
+        .status-led {
+            width: 9px;
+            height: 9px;
+            background: #5c6257;
+            border-radius: 50%;
+            box-shadow: 0 0 7px #5c6257;
+        }
+
+        .status-led.online {
+            background: var(--terminal-green);
+            box-shadow: 0 0 10px var(--terminal-green);
+        }
+
+        .status-led.talking {
+            background: var(--danger);
+            box-shadow: 0 0 12px var(--danger);
+        }
+
+        .status {
+            color: #a2aa9b;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status.online {
+            color: var(--terminal-green);
+        }
+
+        .status.talking {
+            color: var(--danger);
+        }
+
+        .ptt-container {
+            position: relative;
+            width: 210px;
+            height: 210px;
+            margin: 29px auto 20px;
+            display: grid;
+            place-items: center;
+            border: 1px dashed #526345;
+            border-radius: 50%;
+        }
+
+        .ptt-container::before {
+            position: absolute;
+            width: 188px;
+            height: 188px;
+            content: "";
+            border: 2px solid #252e21;
+            border-radius: 50%;
+        }
+
+        #pttBtn {
+            position: relative;
+            z-index: 1;
+            width: 165px;
+            height: 165px;
+            padding: 15px;
+            color: #687061;
+            font-family: "Courier New", monospace;
+            font-size: 15px;
+            font-weight: bold;
+            line-height: 1.4;
+            letter-spacing: 1px;
+            cursor: pointer;
+            touch-action: none;
+            user-select: none;
+            background:
+                radial-gradient(circle at 50% 35%, #333a30, #171c15 70%);
+            border: 7px solid #090c08;
+            border-radius: 50%;
+            outline: 2px solid #414c39;
+            box-shadow:
+                0 10px 0 #070907,
+                0 14px 22px rgba(0, 0, 0, 0.75),
+                inset 0 2px 2px rgba(255, 255, 255, 0.08);
+            transition: 0.1s;
+        }
+
+        #pttBtn:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        #pttBtn.ready {
+            color: #10160d;
+            background: radial-gradient(circle at 50% 35%, #b4ca8f, #667c4e 72%);
+            outline-color: #849b68;
+        }
+
+        #pttBtn.active {
+            color: white;
+            background: radial-gradient(circle at 50% 35%, #ff6259, #9e1710 72%);
+            outline-color: #ff3b30;
+            box-shadow:
+                0 3px 0 #070907,
+                0 0 30px rgba(255, 59, 48, 0.7),
+                inset 0 2px 2px rgba(255, 255, 255, 0.15);
+            transform: translateY(7px) scale(0.98);
+        }
+
+        .instruction {
+            margin: 0;
+            color: #5f6958;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .footer-code {
+            margin-top: 18px;
+            padding-top: 13px;
+            color: #485141;
+            font-size: 9px;
+            letter-spacing: 2px;
+            border-top: 1px solid #263020;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="top-secret">ACESSO RESTRITO</div>
+
+        <div class="content">
+            <h2>CANAL TÁTICO PTT</h2>
+            <div class="subtitle">COMUNICAÇÃO OPERACIONAL</div>
+
+            <div class="box">
+                <div class="label">Identificação da unidade</div>
+                <div class="id-display" id="my-id">INICIALIZANDO...</div>
+            </div>
+
+            <div class="box">
+                <div class="label">Código da unidade de destino</div>
+                <input
+                    type="text"
+                    id="peer-id-input"
+                    placeholder="EX: Radio-0000"
+                    autocomplete="off"
+                >
+                <button id="connect-btn">ESTABELECER CANAL SEGURO</button>
+            </div>
+
+            <div class="box">
+                <div class="status-line">
+                    <span id="status-led" class="status-led"></span>
+                    <span id="status-text" class="status">DESCONECTADO</span>
+                </div>
+            </div>
+
+            <div class="ptt-container">
+                <button id="pttBtn" disabled>CANAL<br>BLOQUEADO</button>
+            </div>
+
+            <p class="instruction">
+                Mantenha pressionado para transmitir - solte para receber
+            </p>
+
+            <div class="footer-code">
+                SISTEMA PTT // SETOR 07 // LINHA OPERACIONAL
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const randomId = "Radio-" + Math.floor(1000 + Math.random()  9000);
+        const peer = new Peer(randomId);
+
+        let currentCall = null;
+        let localStream = null;
+        let targetPeerId = null;
+        let transmitting = false;
+
+        const myIdDisplay = document.getElementById("my-id");
+        const peerIdInput = document.getElementById("peer-id-input");
+        const connectBtn = document.getElementById("connect-btn");
+        const statusText = document.getElementById("status-text");
+        const statusLed = document.getElementById("status-led");
+        const pttBtn = document.getElementById("pttBtn");
+
+        function setStatus(message, state = "") {
+            statusText.innerText = message;
+            statusText.className = status ${state};
+            statusLed.className = status-led ${state};
+        }
+
+        peer.on("open", (id) => {
+            myIdDisplay.innerText = id;
+            setStatus("AGUARDANDO CONEXÃO", "online");
+        });
+
+        peer.on("error", (error) => {
+            console.error("Erro PeerJS:", error);
+            setStatus("FALHA NO CANAL");
+        });
+
+        connectBtn.addEventListener("click", () => {
+            const inputId = peerIdInput.value.trim();
+
+            if (!inputId) {
+                alert("Insira o código da unidade de destino.");
+                return;
+            }
+
+            targetPeerId = inputId;
+            pttBtn.disabled = false;
+            pttBtn.classList.add("ready");
+            pttBtn.innerHTML = "PRESSIONE<br>PARA TRANSMITIR";
+            setStatus("CANAL OPERACIONAL", "online");
+        });
+
+        peer.on("call", (call) => {
+            setStatus("RECEBENDO TRANSMISSÃO", "talking");
+            call.answer();
+
+            call.on("stream", (remoteStream) => {
+                const audio = document.createElement("audio");
+                audio.srcObject = remoteStream;
+                audio.autoplay = true;
+                audio.playsInline = true;
+                document.body.appendChild(audio);
+                audio.play().catch(() => {});
+            });
+
+            call.on("close", () => {
+                setStatus("CANAL OPERACIONAL", "online");
+            });
+
+            call.on("error", () => {
+                setStatus("FALHA NA TRANSMISSÃO");
+            });
+        });
+
+        async function startTransmission(event) {
+            if (event) event.preventDefault();
+            if (!targetPeerId || transmitting) return;
+
+            transmitting = true;
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: false
+                });
+
+                pttBtn.classList.remove("ready");
+                pttBtn.classList.add("active");
+                pttBtn.innerHTML = "TRANSMITINDO<br>AGORA";
+                setStatus("VOCÊ ESTÁ TRANSMITINDO", "talking");
+
+                currentCall = peer.call(targetPeerId, localStream);
+
+                if (!currentCall) {
+                    throw new Error("Não foi possível iniciar a transmissão.");
+                }
+            } catch (error) {
+                console.error("Erro no microfone:", error);
+                transmitting = false;
+                stopTransmission();
+                alert("Falha no microfone. Verifique as permissões do navegador ou APK.");
+            }
+        }
+
+        function stopTransmission(event) {
+            if (event) event.preventDefault();
+
+            if (currentCall) {
+                currentCall.close();
+                currentCall = null;
+            }
+
+            if (localStream) {
+                localStream.getTracks().forEach((track) => track.stop());
+                localStream = null;
+            }
+
+            transmitting = false;
+            pttBtn.classList.remove("active");
+
+            if (targetPeerId) {
+                pttBtn.classList.add("ready");
+                pttBtn.innerHTML = "PRESSIONE<br>PARA TRANSMITIR";
+                setStatus("CANAL OPERACIONAL", "online");
+            }
+        }
+
+        pttBtn.addEventListener("pointerdown", startTransmission);
+        pttBtn.addEventListener("pointerup", stopTransmission);
+        pttBtn.addEventListener("pointercancel", stopTransmission);
+        pttBtn.addEventListener("pointerleave", (event) => {
+            if (transmitting) stopTransmission(event);
+        });
+
+        window.addEventListener("blur", () => {
+            if (transmitting) stopTransmission();
+        });
+    </script>
+</body>
+</html>
+``
